@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法夾公仔機：四字成語大挑戰</title>
+    <style>
+        body {
+            font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif;
+            background-color: #ffe4e1;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        #game-container {
+            background-color: #fff;
+            border: 8px solid #ffb6c1;
+            border-radius: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        h1 { color: #ff69b4; }
+        .score-board {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff8c00;
+            background: #fff8dc;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 20px;
+            border: 2px dashed #ff8c00;
+        }
+        .question-box {
+            font-size: 20px;
+            line-height: 1.6;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: 15px;
+            border: 2px solid #add8e6;
+        }
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .option-btn {
+            background-color: #ffb6c1;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #ff69b4;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .option-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #ff69b4;
+        }
+        .option-btn:hover { background-color: #ff69b4; }
+        .feedback {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+            min-height: 30px;
+        }
+        #end-screen { display: none; }
+        .mistake-list {
+            text-align: left;
+            background: #fff0f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        button.restart-btn {
+            margin-top: 20px;
+            background-color: #32cd32;
+            box-shadow: 0 5px 0 #228b22;
+        }
+        button.restart-btn:hover { background-color: #228b22; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>🎀 魔法夾公仔機 🧸</h1>
+    
+    <div id="play-screen">
+        <div class="score-board">分數: <span id="score">0</span> 🏆 | 題目: <span id="q-num">1</span>/20</div>
+        <div class="question-box" id="question-text">載入題目中...</div>
+        <div class="options-container" id="options"></div>
+        <div class="feedback" id="feedback-text"></div>
+    </div>
+
+    <div id="end-screen">
+        <h2>🎉 遊戲結束！ 🎉</h2>
+        <div class="score-board">你的總分: <span id="final-score"></span> 🏆</div>
+        <div id="gacha-machine"></div>
+        <button class="option-btn restart-btn" onclick="startGame()">再玩一次 🔄</button>
+    </div>
+</div>
+
+<script>
+    // 完整 20 題正確題庫與答案（已校正小朋友原先寫錯的答案）
+    const allQuestions = [
+        { q: "這場演講時間有限，講者一上台就 ______ 地切入主題，完全不浪費時間。", a: "開門見山" },
+        { q: "面對大自然 ______ 的景象，我不禁看得入神了。", a: "千變萬化" },
+        { q: "這座蠟像館裏的明星像製作得 ______ ，讓遊客驚歎不已。", a: "栩栩如生" },
+        { q: "如果我們只看數據的一小部分就下結論，這跟 ______ 有甚麼分別呢？", a: "盲人摸象" },
+        { q: "他剛才還在生氣，現在卻突然大笑起來，真是讓人感到 ______ 。", a: "莫名其妙" },
+        { q: "既然你決定要學鋼琴，就該專心練習，不可 ______ ，否則最後甚麼都學不會。", a: "三心兩意" },
+        { q: "他這次出國交流，順便拜訪了多年未見的老友，真可謂 ______ 。", a: "一石二鳥" },
+        { q: "他那種 ______ 的傲慢態度，讓在場的所有人都感到非常不舒服。", a: "目中無人" },
+        { q: "老師對待班上的每一位同學都 ______ ，絕不會因為成績好壞而有差別待遇。", a: "一視同仁" },
+        { q: "明明是他弄壞了東西，卻還 ______ 地指責別人，真是不可理喻。", a: "理直氣壯" },
+        { q: "這位童話作家的故事 ______ ，幾乎每個小孩都聽過他的作品。", a: "家喻戶曉" },
+        { q: "你跟一個完全不講道理的人爭辯，簡直就像是 ______ ，浪費口舌。", a: "對牛彈琴" },
+        { q: "他總是 ______ ，明明肚子很餓，卻還客氣地說不餓。", a: "口是心非" },
+        { q: "孫悟空 ______ ，翻一個筋斗就能飛到十萬八千里外。", a: "神通廣大" },
+        { q: "媽媽找不到的錢包，原來是被弟弟藏起來了，現在終於 ______ 了。", a: "真相大白" },
+        { q: "明天要去郊野公園遠足，大家都 ______ 地討論。", a: "興高采烈" },
+        { q: "小貓雖然走得很輕，但地板上濕濕的腳印，就是牠偷跑進廚房的 ______ 。", a: "蛛絲馬跡" },
+        { q: "小明在比賽中，雖然贏得第一名，但獎盃卻被摔破了一個小角，真是 ______ 。", a: "美中不足" },
+        { q: "做人要 ______ ，不可以偷偷摸摸拿別人的東西。", a: "光明正大" },
+        { q: "這次颱風的威力 ______ ，大家一定要做好防颱風準備，不能掉以輕心。", a: "非同小可" }
+    ];
+
+    // 提取所有成語作為選項池
+    const allIdioms = allQuestions.map(item => item.a);
+
+    let currentScore = 0;
+    let currentQuestionIndex = 0;
+    let mistakeLog = [];
+    let isAnswering = false;
+
+    function startGame() {
+        currentScore = 0;
+        currentQuestionIndex = 0;
+        mistakeLog = [];
+        document.getElementById('end-screen').style.display = 'none';
+        document.getElementById('play-screen').style.display = 'block';
+        updateScore();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isAnswering = false;
+        document.getElementById('feedback-text').innerHTML = "";
+        document.getElementById('q-num').innerText = currentQuestionIndex + 1;
+        
+        let currentQ = allQuestions[currentQuestionIndex];
+        // 替換底線為更明顯的空格
+        document.getElementById('question-text').innerHTML = currentQ.q.replace("______", "<b> [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] </b>");
+
+        // 產生4個選項：1個正確 + 3個隨機錯誤
+        let options = [currentQ.a];
+        while(options.length < 4) {
+            let randomIdiom = allIdioms[Math.floor(Math.random() * allIdioms.length)];
+            if(!options.includes(randomIdiom)) {
+                options.push(randomIdiom);
+            }
+        }
+        
+        // 打亂選項陣列
+        options.sort(() => Math.random() - 0.5);
+
+        let optionsHtml = "";
+        options.forEach(opt => {
+            optionsHtml += `<button class="option-btn" onclick="checkAnswer('${opt}')">${opt}</button>`;
+        });
+        document.getElementById('options').innerHTML = optionsHtml;
+    }
+
+    function checkAnswer(selectedOpt) {
+        if (isAnswering) return; // 防止重複點擊
+        isAnswering = true;
+
+        let currentQ = allQuestions[currentQuestionIndex];
+        let feedbackEl = document.getElementById('feedback-text');
+
+        if (selectedOpt === currentQ.a) {
+            // 答對了
+            currentScore += 10;
+            feedbackEl.innerHTML = "✅ 夾中公仔啦！太棒了！ (+10分) 🧸";
+            feedbackEl.style.color = "green";
+        } else {
+            // 答錯了
+            currentScore -= 5;
+            feedbackEl.innerHTML = `❌ 哎呀，爪子滑掉了！扣 5 分。正確答案是：<b>${currentQ.a}</b>`;
+            feedbackEl.style.color = "red";
+            mistakeLog.push({ q: currentQ.q, wrong: selectedOpt, right: currentQ.a });
+        }
+        
+        updateScore();
+
+        // 延遲 2 秒後進入下一題
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < allQuestions.length) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 2000);
+    }
+
+    function updateScore() {
+        document.getElementById('score').innerText = currentScore;
+    }
+
+    function endGame() {
+        document.getElementById('play-screen').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = currentScore;
+
+        let gachaEl = document.getElementById('gacha-machine');
+        if (mistakeLog.length === 0) {
+            gachaEl.innerHTML = "<h3>🌟 太神啦！滿分通關，你把公仔機清空了！沒有留下任何錯題扭蛋！ 🌟</h3>";
+        } else {
+            let mistakeHtml = "<h3>📖 魔法錯題扭蛋機 (錯題筆記)：</h3><div class='mistake-list'>";
+            mistakeLog.forEach((item, index) => {
+                let text = item.q.replace("______", `<u><b>${item.right}</b></u>`);
+                mistakeHtml += `<p><b>第 ${index + 1} 顆扭蛋：</b><br>${text}<br><span style='color:gray; font-size:14px;'>(你選了: ${item.wrong})</span></p>`;
+            });
+            mistakeHtml += "</div>";
+            gachaEl.innerHTML = mistakeHtml;
+        }
+    }
+
+    // 啟動遊戲
+    startGame();
+</script>
+
+</body>
+</html>
