@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>魔法夾公仔機：四字成語大挑戰</title>
+    <title>魔法夾公仔機：四字成語大挑戰 (升級版)</title>
     <style>
         body {
             font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif;
@@ -17,27 +17,27 @@
             background-color: #fff;
             border: 8px solid #ffb6c1;
             border-radius: 20px;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
             padding: 20px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         h1 { color: #ff69b4; }
         .score-board {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: #ff8c00;
             background: #fff8dc;
-            padding: 10px;
+            padding: 10px 20px;
             border-radius: 10px;
             display: inline-block;
             margin-bottom: 20px;
             border: 2px dashed #ff8c00;
         }
         .question-box {
-            font-size: 20px;
+            font-size: 22px;
             line-height: 1.6;
-            margin: 20px 0;
+            margin: 15px 0;
             padding: 20px;
             background-color: #f0f8ff;
             border-radius: 15px;
@@ -58,57 +58,122 @@
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 5px 0 #ff69b4;
-            transition: transform 0.1s, box-shadow 0.1s;
+            transition: transform 0.1s, box-shadow 0.1s, background-color 0.3s;
         }
-        .option-btn:active {
+        .option-btn:active:not(:disabled) {
             transform: translateY(5px);
             box-shadow: 0 0 0 #ff69b4;
         }
-        .option-btn:hover { background-color: #ff69b4; }
-        .feedback {
-            font-size: 22px;
-            font-weight: bold;
-            margin-top: 20px;
-            min-height: 30px;
+        .option-btn:hover:not(:disabled) { background-color: #ff69b4; }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
+
+        /* 動畫與狀態顏色 */
+        .correct-btn {
+            background-color: #32cd32 !important;
+            box-shadow: 0 5px 0 #228b22 !important;
+            animation: bounce 0.5s;
         }
-        #end-screen { display: none; }
-        .mistake-list {
+        .wrong-btn {
+            background-color: #ff4500 !important;
+            box-shadow: 0 5px 0 #cc3700 !important;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* 解說面板 */
+        #explanation-box {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
             text-align: left;
-            background: #fff0f5;
-            padding: 15px;
+            font-size: 18px;
+            line-height: 1.5;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .exp-correct { background-color: #e0ffe0; border: 2px solid #32cd32; }
+        .exp-wrong { background-color: #ffe4e1; border: 2px solid #ff4500; }
+        
+        .next-btn {
+            display: block;
+            width: 100%;
+            margin-top: 15px;
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 20px;
             border-radius: 10px;
-            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0000cd;
         }
-        button.restart-btn {
-            margin-top: 20px;
-            background-color: #32cd32;
-            box-shadow: 0 5px 0 #228b22;
-        }
-        button.restart-btn:hover { background-color: #228b22; }
+        .next-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #0000cd; }
+
+        #end-screen { display: none; }
+        .mistake-list { text-align: left; background: #fff0f5; padding: 15px; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>🎀 魔法夾公仔機 🧸</h1>
+    <h1>🎀 魔法夾公仔機 (解說版) 🧸</h1>
     
     <div id="play-screen">
         <div class="score-board">分數: <span id="score">0</span> 🏆 | 題目: <span id="q-num">1</span>/20</div>
         <div class="question-box" id="question-text">載入題目中...</div>
         <div class="options-container" id="options"></div>
-        <div class="feedback" id="feedback-text"></div>
+        
+        <!-- 解說面板 -->
+        <div id="explanation-box">
+            <div id="exp-content"></div>
+            <button class="next-btn" onclick="nextQuestion()">繼續夾公仔 ➡️</button>
+        </div>
     </div>
 
     <div id="end-screen">
         <h2>🎉 遊戲結束！ 🎉</h2>
         <div class="score-board">你的總分: <span id="final-score"></span> 🏆</div>
         <div id="gacha-machine"></div>
-        <button class="option-btn restart-btn" onclick="startGame()">再玩一次 🔄</button>
+        <button class="next-btn" style="background-color: #32cd32; box-shadow: 0 5px 0 #228b22; margin-top:20px;" onclick="startGame()">再玩一次 🔄</button>
     </div>
 </div>
 
 <script>
-    // 完整 20 題正確題庫與答案（已校正小朋友原先寫錯的答案）
+    // 廣東話成語詞典 (專為小朋友解釋)
+    const idiomDict = {
+        "開門見山": "一開始就直接講重點，唔會兜圈子。",
+        "千變萬化": "變化非常之多，估佢唔到。",
+        "栩栩如生": "整得好似真嘅一樣，非常生動。",
+        "盲人摸象": "只係睇到事物嘅一小部分，就以為係全部。",
+        "莫名其妙": "發生嘅事好奇怪，令人完全唔明白點解。",
+        "三心兩意": "又想咁又想咁，攞唔定主意。",
+        "一石二鳥": "做一件事，可以同時得到兩個好處。",
+        "目中無人": "驕傲自大，睇唔起其他人。",
+        "一視同仁": "對所有人都一樣咁好，唔會大細超。",
+        "理直氣壯": "覺得自己啱，講嘢就好大聲、好有自信。",
+        "家喻戶曉": "每家每戶都知道，非常出名。",
+        "對牛彈琴": "對住唔明白嘅人講大道理，白費心機。",
+        "口是心非": "把口講一套，心入面諗另一套。",
+        "神通廣大": "本領好大，咩都做得到。",
+        "真相大白": "事情嘅真正原因終於全部搞清楚晒。",
+        "興高采烈": "非常之開心、興奮。",
+        "蛛絲馬跡": "事情留低嘅隱蔽線索或者痕跡。",
+        "美中不足": "雖然已經好好，但係仲有少少瑕疵或者遺憾。",
+        "光明正大": "做事坦白、堂堂正正，唔會偷偷摸摸。",
+        "非同小可": "事情好嚴重或者好重要，絕對唔可以睇小。"
+    };
+
     const allQuestions = [
         { q: "這場演講時間有限，講者一上台就 ______ 地切入主題，完全不浪費時間。", a: "開門見山" },
         { q: "面對大自然 ______ 的景象，我不禁看得入神了。", a: "千變萬化" },
@@ -132,13 +197,10 @@
         { q: "這次颱風的威力 ______ ，大家一定要做好防颱風準備，不能掉以輕心。", a: "非同小可" }
     ];
 
-    // 提取所有成語作為選項池
-    const allIdioms = allQuestions.map(item => item.a);
-
+    const allIdioms = Object.keys(idiomDict);
     let currentScore = 0;
     let currentQuestionIndex = 0;
     let mistakeLog = [];
-    let isAnswering = false;
 
     function startGame() {
         currentScore = 0;
@@ -151,15 +213,12 @@
     }
 
     function loadQuestion() {
-        isAnswering = false;
-        document.getElementById('feedback-text').innerHTML = "";
+        document.getElementById('explanation-box').style.display = 'none';
         document.getElementById('q-num').innerText = currentQuestionIndex + 1;
         
         let currentQ = allQuestions[currentQuestionIndex];
-        // 替換底線為更明顯的空格
         document.getElementById('question-text').innerHTML = currentQ.q.replace("______", "<b> [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] </b>");
 
-        // 產生4個選項：1個正確 + 3個隨機錯誤
         let options = [currentQ.a];
         while(options.length < 4) {
             let randomIdiom = allIdioms[Math.floor(Math.random() * allIdioms.length)];
@@ -167,48 +226,61 @@
                 options.push(randomIdiom);
             }
         }
-        
-        // 打亂選項陣列
         options.sort(() => Math.random() - 0.5);
 
         let optionsHtml = "";
         options.forEach(opt => {
-            optionsHtml += `<button class="option-btn" onclick="checkAnswer('${opt}')">${opt}</button>`;
+            optionsHtml += `<button class="option-btn" id="btn-${opt}" onclick="checkAnswer('${opt}', this)">${opt}</button>`;
         });
         document.getElementById('options').innerHTML = optionsHtml;
     }
 
-    function checkAnswer(selectedOpt) {
-        if (isAnswering) return; // 防止重複點擊
-        isAnswering = true;
+    function checkAnswer(selectedOpt, btnElement) {
+        // 鎖定所有按鈕
+        let allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
 
         let currentQ = allQuestions[currentQuestionIndex];
-        let feedbackEl = document.getElementById('feedback-text');
+        let expBox = document.getElementById('explanation-box');
+        let expContent = document.getElementById('exp-content');
 
         if (selectedOpt === currentQ.a) {
-            // 答對了
+            // 答對處理
             currentScore += 10;
-            feedbackEl.innerHTML = "✅ 夾中公仔啦！太棒了！ (+10分) 🧸";
-            feedbackEl.style.color = "green";
+            btnElement.classList.add('correct-btn');
+            expBox.className = 'exp-correct';
+            expContent.innerHTML = `
+                <h3 style="color:#228b22; margin-top:0;">🟢 答啱啦！好犀利！ (+10分)</h3>
+                <p><b>【${currentQ.a}】</b>嘅意思係：<br>👉 ${idiomDict[currentQ.a]}</p>
+            `;
         } else {
-            // 答錯了
+            // 答錯處理
             currentScore -= 5;
-            feedbackEl.innerHTML = `❌ 哎呀，爪子滑掉了！扣 5 分。正確答案是：<b>${currentQ.a}</b>`;
-            feedbackEl.style.color = "red";
+            btnElement.classList.add('wrong-btn');
+            // 將正確答案標示出來
+            document.getElementById(`btn-${currentQ.a}`).classList.add('correct-btn');
+            
+            expBox.className = 'exp-wrong';
+            expContent.innerHTML = `
+                <h3 style="color:#ff0000; margin-top:0;">🔴 哎呀，爪子滑掉啦！ (-5分)</h3>
+                <p>你揀咗<b>【${selectedOpt}】</b>，佢嘅意思其實係：<br>🙅‍♀️ ${idiomDict[selectedOpt]}</p>
+                <hr style="border:1px dashed #ffb6c1;">
+                <p>正確答案應該係<b>【${currentQ.a}】</b>，意思係：<br>✅ ${idiomDict[currentQ.a]}</p>
+            `;
             mistakeLog.push({ q: currentQ.q, wrong: selectedOpt, right: currentQ.a });
         }
         
         updateScore();
+        expBox.style.display = 'block';
+    }
 
-        // 延遲 2 秒後進入下一題
-        setTimeout(() => {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < allQuestions.length) {
-                loadQuestion();
-            } else {
-                endGame();
-            }
-        }, 2000);
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < allQuestions.length) {
+            loadQuestion();
+        } else {
+            endGame();
+        }
     }
 
     function updateScore() {
@@ -222,12 +294,16 @@
 
         let gachaEl = document.getElementById('gacha-machine');
         if (mistakeLog.length === 0) {
-            gachaEl.innerHTML = "<h3>🌟 太神啦！滿分通關，你把公仔機清空了！沒有留下任何錯題扭蛋！ 🌟</h3>";
+            gachaEl.innerHTML = "<h3>🌟 太神啦！滿分通關！你真係成語大師！ 🌟</h3>";
         } else {
-            let mistakeHtml = "<h3>📖 魔法錯題扭蛋機 (錯題筆記)：</h3><div class='mistake-list'>";
+            let mistakeHtml = "<h3>📖 魔法錯題扭蛋機 (幫你記低咗錯邊啲)：</h3><div class='mistake-list'>";
             mistakeLog.forEach((item, index) => {
-                let text = item.q.replace("______", `<u><b>${item.right}</b></u>`);
-                mistakeHtml += `<p><b>第 ${index + 1} 顆扭蛋：</b><br>${text}<br><span style='color:gray; font-size:14px;'>(你選了: ${item.wrong})</span></p>`;
+                let text = item.q.replace("______", `<u style="color:red;"><b>${item.right}</b></u>`);
+                mistakeHtml += `
+                    <div style="margin-bottom:15px; border-bottom:1px dashed #ccc; padding-bottom:10px;">
+                        <b>第 ${index + 1} 顆扭蛋：</b><br>${text}<br>
+                        <span style='color:gray; font-size:16px;'>👉 記住啦：<b>${item.right}</b> 嘅意思係「${idiomDict[item.right]}」</span>
+                    </div>`;
             });
             mistakeHtml += "</div>";
             gachaEl.innerHTML = mistakeHtml;
