@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>魔法夾公仔機：四字成語大挑戰 (語音升級版)</title>
+    <title>魔法夾公仔機：四字成語大挑戰 (錯題重練版)</title>
     <style>
         body {
             font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif;
@@ -110,7 +110,6 @@
         }
         .next-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #0000cd; }
         
-        /* 語音按鈕樣式 */
         .speak-btn {
             background-color: #ffd700;
             color: #b8860b;
@@ -127,15 +126,22 @@
 
         #end-screen { display: none; }
         .mistake-list { text-align: left; background: #fff0f5; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 25px;
+        }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>🎀 魔法夾公仔機 (語音版) 🧸</h1>
+    <h1>🎀 魔法夾公仔機 🧸</h1>
     
     <div id="play-screen">
-        <div class="score-board">分數: <span id="score">0</span> 🏆 | 題目: <span id="q-num">1</span>/20</div>
+        <div class="score-board">分數: <span id="score">0</span> 🏆 | 題目: <span id="q-num">1</span>/<span id="q-total">20</span></div>
         <div class="question-box" id="question-text">載入題目中...</div>
         <div class="options-container" id="options"></div>
         
@@ -147,9 +153,17 @@
 
     <div id="end-screen">
         <h2>🎉 遊戲結束！ 🎉</h2>
-        <div class="score-board">你的總分: <span id="final-score"></span> 🏆</div>
+        <div class="score-board">
+            答對: <span id="correct-count"></span> / <span id="total-count"></span> 題<br>
+            總分: <span id="final-score"></span> 🏆
+        </div>
+        
         <div id="gacha-machine"></div>
-        <button class="next-btn" style="background-color: #32cd32; box-shadow: 0 5px 0 #228b22; margin-top:20px;" onclick="startGame()">再玩一次 🔄</button>
+        
+        <div class="action-buttons">
+            <button id="retry-btn" class="next-btn" style="background-color: #ff8c00; box-shadow: 0 5px 0 #cc7000; display:none;" onclick="startGame(true)">🎯 重做錯誤題目</button>
+            <button class="next-btn" style="background-color: #32cd32; box-shadow: 0 5px 0 #228b22;" onclick="startGame(false)">🔄 再玩一次 (全部題目)</button>
+        </div>
     </div>
 </div>
 
@@ -201,41 +215,54 @@
     ];
 
     const allIdioms = Object.keys(idiomDict);
+    
+    // 遊戲狀態變數
+    let gameQuestions = []; 
     let currentScore = 0;
+    let correctCount = 0; // 記錄答對題數
     let currentQuestionIndex = 0;
     let mistakeLog = [];
 
-    // --- 新增：文字轉語音功能 ---
     function speakText(text) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // 停止上一句未讀完嘅聲音
+            window.speechSynthesis.cancel(); 
             let msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'zh-HK'; // 設定為廣東話 (香港)
-            msg.rate = 0.9;     // 語速稍為收慢，方便小朋友聽
+            msg.lang = 'zh-HK'; 
+            msg.rate = 0.9;     
             window.speechSynthesis.speak(msg);
-        } else {
-            alert("哎呀！你嘅瀏覽器唔支援語音功能，建議用最新版嘅 Chrome 或 Safari 呀！");
         }
     }
 
-    function startGame() {
+    // isRetry = true 代表只重做錯題；false 代表玩全部題目
+    function startGame(isRetry = false) {
+        if (isRetry && mistakeLog.length > 0) {
+            // 將錯題紀錄轉換為題目格式
+            gameQuestions = mistakeLog.map(item => ({ q: item.q, a: item.right }));
+        } else {
+            // 玩全部 20 題
+            gameQuestions = [...allQuestions];
+        }
+
         currentScore = 0;
+        correctCount = 0;
         currentQuestionIndex = 0;
-        mistakeLog = [];
+        mistakeLog = []; // 清空新的錯題本，準備記錄呢一局嘅錯題
+
+        document.getElementById('q-total').innerText = gameQuestions.length;
         document.getElementById('end-screen').style.display = 'none';
         document.getElementById('play-screen').style.display = 'block';
+        
         updateScore();
         loadQuestion();
     }
 
     function loadQuestion() {
-        // 進入新題目時停止語音
         window.speechSynthesis.cancel();
         
         document.getElementById('explanation-box').style.display = 'none';
         document.getElementById('q-num').innerText = currentQuestionIndex + 1;
         
-        let currentQ = allQuestions[currentQuestionIndex];
+        let currentQ = gameQuestions[currentQuestionIndex];
         document.getElementById('question-text').innerHTML = currentQ.q.replace("______", "<b> [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] </b>");
 
         let options = [currentQ.a];
@@ -258,14 +285,15 @@
         let allBtns = document.querySelectorAll('.option-btn');
         allBtns.forEach(btn => btn.disabled = true);
 
-        let currentQ = allQuestions[currentQuestionIndex];
+        let currentQ = gameQuestions[currentQuestionIndex];
         let expBox = document.getElementById('explanation-box');
         let expContent = document.getElementById('exp-content');
         
-        let speakString = ""; // 準備畀電腦讀嘅文字
+        let speakString = ""; 
 
         if (selectedOpt === currentQ.a) {
             currentScore += 10;
+            correctCount++; // 答對題數 +1
             btnElement.classList.add('correct-btn');
             expBox.className = 'exp-correct';
             
@@ -276,7 +304,6 @@
                 <p><b>【${currentQ.a}】</b>嘅意思係：<br>👉 ${idiomDict[currentQ.a]}</p>
                 <button class="speak-btn" onclick="speakText('${speakString}')">🔊 聽廣東話解說</button>
             `;
-            // 答啱可以自動發音畀少少鼓勵
             speakText(speakString); 
             
         } else {
@@ -295,6 +322,7 @@
                 <p>正確答案應該係<b>【${currentQ.a}】</b>，意思係：<br>✅ ${idiomDict[currentQ.a]}</p>
                 <button class="speak-btn" onclick="speakText('${speakString}')">🔊 聽廣東話解說</button>
             `;
+            // 記錄錯題
             mistakeLog.push({ q: currentQ.q, wrong: selectedOpt, right: currentQ.a });
         }
         
@@ -304,7 +332,7 @@
 
     function nextQuestion() {
         currentQuestionIndex++;
-        if (currentQuestionIndex < allQuestions.length) {
+        if (currentQuestionIndex < gameQuestions.length) {
             loadQuestion();
         } else {
             endGame();
@@ -319,12 +347,19 @@
         window.speechSynthesis.cancel();
         document.getElementById('play-screen').style.display = 'none';
         document.getElementById('end-screen').style.display = 'block';
+        
+        // 更新結算分數與題數
+        document.getElementById('correct-count').innerText = correctCount;
+        document.getElementById('total-count').innerText = gameQuestions.length;
         document.getElementById('final-score').innerText = currentScore;
 
         let gachaEl = document.getElementById('gacha-machine');
+        let retryBtn = document.getElementById('retry-btn');
+        
         if (mistakeLog.length === 0) {
-            gachaEl.innerHTML = "<h3>🌟 太神啦！滿分通關！你真係成語大師！ 🌟</h3>";
-            speakText("太神啦！滿分通關！你真係成語大師！");
+            gachaEl.innerHTML = "<h3>🌟 太神啦！滿分通關！所有題目都答啱晒！ 🌟</h3>";
+            speakText("太神啦！滿分通關！所有題目都答啱晒！");
+            retryBtn.style.display = "none"; // 全對就隱藏重做按鈕
         } else {
             let mistakeHtml = "<h3>📖 魔法錯題扭蛋機 (幫你記低咗錯邊啲)：</h3><div class='mistake-list'>";
             mistakeLog.forEach((item, index) => {
@@ -339,10 +374,12 @@
             });
             mistakeHtml += "</div>";
             gachaEl.innerHTML = mistakeHtml;
+            retryBtn.style.display = "block"; // 有錯題就顯示重做按鈕
         }
     }
 
-    startGame();
+    // 初始化啟動遊戲 (預設玩全部)
+    startGame(false);
 </script>
 
 </body>
